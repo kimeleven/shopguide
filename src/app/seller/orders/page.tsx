@@ -27,8 +27,27 @@ interface Order {
   createdAt: string;
 }
 
+const statusLabel: Record<string, string> = {
+  PENDING: "대기",
+  PAID: "결제완료",
+  CONFIRMED: "확인",
+  SHIPPED: "배송중",
+  COMPLETED: "완료",
+  CANCELLED: "취소",
+};
+
+const statusColor: Record<string, string> = {
+  PENDING: "bg-yellow-100 text-yellow-700",
+  PAID: "bg-blue-100 text-blue-700",
+  CONFIRMED: "bg-indigo-100 text-indigo-700",
+  SHIPPED: "bg-purple-100 text-purple-700",
+  COMPLETED: "bg-green-100 text-green-700",
+  CANCELLED: "bg-red-100 text-red-700",
+};
+
 export default function SellerOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/orders")
@@ -50,13 +69,18 @@ export default function SellerOrdersPage() {
     }
   };
 
-  const statusLabel: Record<string, string> = {
-    PENDING: "대기",
-    PAID: "결제완료",
-    CONFIRMED: "확인",
-    SHIPPED: "배송중",
-    COMPLETED: "완료",
-    CANCELLED: "취소",
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    setUpdatingId(orderId);
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    }
+    setUpdatingId(null);
   };
 
   return (
@@ -80,23 +104,31 @@ export default function SellerOrdersPage() {
           orders.map((order) => (
             <div key={order.id} className="bg-white rounded-xl shadow p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <div>
+                <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-400">
                     {new Date(order.createdAt).toLocaleString("ko-KR")}
                   </span>
-                  <span className={`ml-2 text-xs px-2 py-1 rounded-full ${
-                    order.status === "PAID" ? "bg-blue-100 text-blue-700" :
-                    order.status === "COMPLETED" ? "bg-green-100 text-green-700" :
-                    "bg-gray-100 text-gray-600"
-                  }`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${statusColor[order.status] ?? "bg-gray-100 text-gray-600"}`}>
                     {statusLabel[order.status] || order.status}
                   </span>
                 </div>
-                <span className="text-sm text-gray-500">
-                  {order.paymentMethod === "KAKAO_SEND" ? "카카오송금" :
-                   order.paymentMethod === "TOSS_SEND" ? "토스송금" :
-                   order.paymentMethod === "BANK_TRANSFER" ? "계좌이체" : "-"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">
+                    {order.paymentMethod === "KAKAO_SEND" ? "카카오송금" :
+                     order.paymentMethod === "TOSS_SEND" ? "토스송금" :
+                     order.paymentMethod === "BANK_TRANSFER" ? "계좌이체" : "-"}
+                  </span>
+                  <select
+                    value={order.status}
+                    disabled={updatingId === order.id}
+                    onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                    className="text-sm border rounded px-2 py-1 bg-white cursor-pointer disabled:opacity-50"
+                  >
+                    {Object.entries(statusLabel).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="text-sm space-y-1">
                 {order.items.map((item) => (
