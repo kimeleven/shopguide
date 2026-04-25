@@ -5,9 +5,30 @@ import { getAdminSession } from "@/lib/admin-auth";
 export async function GET(req: NextRequest) {
   const shopId = req.nextUrl.searchParams.get("shopId");
 
-  const where = shopId ? { shopId, active: true } : {};
+  if (shopId) {
+    // 공개 쇼핑 페이지: 해당 shop의 활성 상품만
+    const products = await prisma.product.findMany({
+      where: { shopId, active: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(products);
+  }
+
+  // 셀러 대시보드: 인증된 셀러 본인 상품만
+  const admin = await getAdminSession();
+  if (!admin?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const shop = await prisma.shop.findUnique({
+    where: { sellerId: admin.id },
+  });
+  if (!shop) {
+    return NextResponse.json([]);
+  }
+
   const products = await prisma.product.findMany({
-    where,
+    where: { shopId: shop.id },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(products);
