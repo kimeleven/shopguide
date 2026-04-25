@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAdminSession } from "@/lib/admin-auth";
 
 // Create invite
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const role = (session?.user as any)?.role;
-  if (!session?.user || (role !== "ADMIN" && role !== "SELLER")) {
+  const admin = await getAdminSession();
+  if (!admin || (admin.role !== "ADMIN" && admin.role !== "SELLER")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -21,16 +19,14 @@ export async function POST(req: NextRequest) {
     update: {
       token: crypto.randomUUID(),
       role: inviteRole || "SELLER",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      createdBy: (session.user as any).id,
+      createdBy: admin.id,
       usedAt: null,
       expiresAt,
     },
     create: {
       email,
       role: inviteRole || "SELLER",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      createdBy: (session.user as any).id,
+      createdBy: admin.id,
       expiresAt,
     },
   });
@@ -40,10 +36,8 @@ export async function POST(req: NextRequest) {
 
 // List invites
 export async function GET() {
-  const session = await auth();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const role = (session?.user as any)?.role;
-  if (!session?.user || (role !== "ADMIN" && role !== "SELLER")) {
+  const admin = await getAdminSession();
+  if (!admin || (admin.role !== "ADMIN" && admin.role !== "SELLER")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

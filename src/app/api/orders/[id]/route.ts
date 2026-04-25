@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAdminSession } from "@/lib/admin-auth";
 
 const VALID_STATUSES = ["PENDING", "PAID", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED"];
 
@@ -8,12 +8,12 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const admin = await getAdminSession();
+  if (!admin?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const shop = await prisma.shop.findUnique({ where: { sellerId: session.user.id } });
+  const shop = await prisma.shop.findUnique({ where: { sellerId: admin.id } });
   if (!shop) {
     return NextResponse.json({ error: "No shop found" }, { status: 403 });
   }

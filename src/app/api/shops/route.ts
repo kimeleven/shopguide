@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAdminSession } from "@/lib/admin-auth";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const admin = await getAdminSession();
+  if (!admin?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const shop = await prisma.shop.findUnique({
-    where: { sellerId: session.user.id },
+    where: { sellerId: admin.id },
   });
   return NextResponse.json(shop);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const admin = await getAdminSession();
+  if (!admin?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await req.json();
   const shop = await prisma.shop.upsert({
-    where: { sellerId: session.user.id },
+    where: { sellerId: admin.id },
     update: {
       name: body.name,
       description: body.description,
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       bankHolder: body.bankHolder,
     },
     create: {
-      sellerId: session.user.id,
+      sellerId: admin.id,
       name: body.name,
       description: body.description,
       bankName: body.bankName,
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   // Update user role to SELLER
   await prisma.user.update({
-    where: { id: session.user.id },
+    where: { id: admin.id },
     data: { role: "SELLER" },
   });
 

@@ -30,6 +30,19 @@ export async function POST(req: NextRequest) {
     role: user.role,
   });
 
+  // Auto-create shop if seller/admin has none
+  if (user.role === "SELLER" || user.role === "ADMIN") {
+    const existingShop = await prisma.shop.findUnique({ where: { sellerId: user.id } });
+    if (!existingShop) {
+      await prisma.shop.create({
+        data: {
+          sellerId: user.id,
+          name: `${user.name ?? user.email}의 샵`,
+        },
+      });
+    }
+  }
+
   const res = NextResponse.json({ ok: true });
   res.cookies.set(adminCookieOptions(token));
   return res;

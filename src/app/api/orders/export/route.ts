@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAdminSession } from "@/lib/admin-auth";
 import * as XLSX from "xlsx";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const admin = await getAdminSession();
+  if (!admin?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const shop = await prisma.shop.findUnique({
-    where: { sellerId: session.user.id },
+    where: { sellerId: admin.id },
   });
   if (!shop) {
     return NextResponse.json({ error: "No shop" }, { status: 403 });

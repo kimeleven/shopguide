@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getAdminSession } from "@/lib/admin-auth";
 
 async function getSellerProduct(productId: string, userId: string) {
   const shop = await prisma.shop.findUnique({ where: { sellerId: userId } });
@@ -14,13 +14,13 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const admin = await getAdminSession();
+  if (!admin?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const product = await getSellerProduct(id, session.user.id);
+  const product = await getSellerProduct(id, admin.id);
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -47,13 +47,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const admin = await getAdminSession();
+  if (!admin?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
-  const product = await getSellerProduct(id, session.user.id);
+  const product = await getSellerProduct(id, admin.id);
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
