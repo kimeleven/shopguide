@@ -1,8 +1,7 @@
-import { auth } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 import { getAdminFromRequest } from "@/lib/admin-auth";
-import { NextResponse } from "next/server";
 
-export default auth(async (req) => {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Always public
@@ -13,13 +12,11 @@ export default auth(async (req) => {
     pathname.startsWith("/api/invite") ||
     pathname === "/api/admin/setup" ||
     pathname.startsWith("/api/admin/auth") ||
-    pathname === "/"
+    pathname === "/" ||
+    pathname === "/admin/setup" ||
+    pathname === "/admin/login" ||
+    pathname.startsWith("/admin/accept")
   ) {
-    return NextResponse.next();
-  }
-
-  // Admin setup & login pages: public
-  if (pathname === "/admin/setup" || pathname === "/admin/login" || pathname.startsWith("/admin/accept")) {
     return NextResponse.next();
   }
 
@@ -33,7 +30,7 @@ export default auth(async (req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
