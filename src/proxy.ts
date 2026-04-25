@@ -35,8 +35,8 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // API routes for admin: require ADMIN or SELLER
-  if (pathname.startsWith("/api/admin")) {
+  // API routes for admin: require ADMIN or SELLER (except setup which is public)
+  if (pathname.startsWith("/api/admin") && pathname !== "/api/admin/setup") {
     if (!session?.user || (role !== "ADMIN" && role !== "SELLER")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
