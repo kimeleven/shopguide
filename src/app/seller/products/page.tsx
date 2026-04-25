@@ -114,11 +114,11 @@ export default function SellerProductsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
         <h1 className="text-2xl font-bold">상품 관리</h1>
         <button
           onClick={() => { closeForm(); setShowForm(true); }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shrink-0"
         >
           + 상품 등록
         </button>
@@ -127,7 +127,7 @@ export default function SellerProductsPage() {
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow mb-6 space-y-4">
           <h2 className="text-lg font-semibold">{editingProduct ? "상품 수정" : "상품 등록"}</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">상품명 *</label>
               <input
@@ -150,7 +150,7 @@ export default function SellerProductsPage() {
             </div>
           </div>
           {[1, 2, 3].map((n) => (
-            <div key={n} className="grid grid-cols-2 gap-4">
+            <div key={n} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">선택사항{n} 이름</label>
                 <input
@@ -184,8 +184,8 @@ export default function SellerProductsPage() {
         </form>
       )}
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
+        <table className="w-full min-w-[600px]">
           <thead className="bg-gray-100">
             <tr>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">상품명</th>

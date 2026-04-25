@@ -85,11 +85,11 @@ export default function SellerOrdersPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
         <h1 className="text-2xl font-bold">주문 관리</h1>
         <button
           onClick={handleExport}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shrink-0"
         >
           엑셀 다운로드
         </button>
@@ -103,8 +103,8 @@ export default function SellerOrdersPage() {
         ) : (
           orders.map((order) => (
             <div key={order.id} className="bg-white rounded-xl shadow p-4 space-y-3">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap justify-between items-start gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-gray-400">
                     {new Date(order.createdAt).toLocaleString("ko-KR")}
                   </span>
@@ -112,7 +112,7 @@ export default function SellerOrdersPage() {
                     {statusLabel[order.status] || order.status}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm text-gray-500">
                     {order.paymentMethod === "KAKAO_SEND" ? "카카오송금" :
                      order.paymentMethod === "TOSS_SEND" ? "토스송금" :

@@ -7,18 +7,18 @@ export default function SellerLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b px-6 py-3 flex items-center gap-6">
-        <Link href="/seller/products" className="font-bold text-lg text-gray-900">
+      <nav className="bg-white border-b px-4 py-3 flex items-center gap-4 overflow-x-auto">
+        <Link href="/seller/products" className="font-bold text-lg text-gray-900 whitespace-nowrap shrink-0">
           ShopGuide 셀러
         </Link>
-        <Link href="/seller/products" className="text-gray-600 hover:text-gray-900">
+        <Link href="/seller/products" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
           상품관리
         </Link>
-        <Link href="/seller/orders" className="text-gray-600 hover:text-gray-900">
+        <Link href="/seller/orders" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
           주문관리
         </Link>
       </nav>
-      <div className="max-w-5xl mx-auto p-6">{children}</div>
+      <div className="max-w-5xl mx-auto px-4 py-6">{children}</div>
     </div>
   );
 }

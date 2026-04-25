@@ -128,7 +128,7 @@ function ShippingForm({
   return (
     <div className="border rounded-xl p-4 bg-white shadow space-y-3">
       <div className="font-semibold text-sm text-gray-700">배송지 정보 입력</div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
           <label className="block text-xs text-gray-500 mb-1">받는 분 *</label>
           <input
@@ -485,7 +485,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
 
       {/* 텍스트 입력 — browse 단계만 */}
       {showTextInput && (
-        <div className="border-t bg-white p-4 max-w-2xl mx-auto w-full fixed bottom-0 left-0 right-0">
+        <div className="border-t bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] max-w-2xl mx-auto w-full fixed bottom-0 left-0 right-0">
           <form
             onSubmit={(e) => {
               e.preventDefault();
