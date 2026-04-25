@@ -11,7 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "profile_nickname profile_image account_email phone_number",
+          scope: "profile_nickname profile_image account_email",
         },
       },
     }),
