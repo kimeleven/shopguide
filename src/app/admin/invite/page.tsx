@@ -57,12 +57,12 @@ export default function InvitePage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="flex-1 border rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="border rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
           >
             <option value="SELLER">셀러</option>
             <option value="ADMIN">관리자</option>

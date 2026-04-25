@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
           <input
             type="password"
@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
           />
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
@@ -60,6 +60,8 @@ export default function AdminLoginPage() {
         </form>
         <p className="text-center text-xs text-gray-400">
           고객 로그인은 <a href="/auth/signin" className="underline">여기</a>
+          {" · "}
+          <a href="/admin/setup" className="underline">최초 설정</a>
         </p>
       </div>
     </main>
