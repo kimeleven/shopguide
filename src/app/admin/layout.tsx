@@ -16,6 +16,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Link href="/admin/invite" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
           사용자 초대
         </Link>
+        <Link href="/admin/applications" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
+          셀러 신청
+        </Link>
       </nav>
       <div className="max-w-5xl mx-auto px-4 py-6">{children}</div>
     </div>
