@@ -1,11 +1,9 @@
 import { auth } from "@/lib/auth";
+import { getAdminFromRequest } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl;
-  const session = req.auth;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const role = (session?.user as any)?.role;
 
   // Always public
   if (
@@ -13,32 +11,23 @@ export default auth((req) => {
     pathname.startsWith("/shop") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/invite") ||
+    pathname === "/api/admin/setup" ||
+    pathname.startsWith("/api/admin/auth") ||
     pathname === "/"
   ) {
     return NextResponse.next();
   }
 
-  // Admin setup page: public only if no admin exists (checked in page itself)
-  if (pathname === "/admin/setup") return NextResponse.next();
-
-  // Admin login page: public
-  if (pathname === "/admin/login") return NextResponse.next();
-
-  // Admin routes: require ADMIN or SELLER
-  if (pathname.startsWith("/admin") || pathname.startsWith("/seller")) {
-    if (!session?.user) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
-    }
-    if (role !== "ADMIN" && role !== "SELLER") {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
-    }
+  // Admin setup & login pages: public
+  if (pathname === "/admin/setup" || pathname === "/admin/login" || pathname.startsWith("/admin/accept")) {
     return NextResponse.next();
   }
 
-  // API routes for admin: require ADMIN or SELLER (except setup which is public)
-  if (pathname.startsWith("/api/admin") && pathname !== "/api/admin/setup") {
-    if (!session?.user || (role !== "ADMIN" && role !== "SELLER")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Admin / Seller routes: check admin cookie
+  if (pathname.startsWith("/admin") || pathname.startsWith("/seller") || pathname.startsWith("/api/admin")) {
+    const admin = await getAdminFromRequest(req);
+    if (!admin || (admin.role !== "ADMIN" && admin.role !== "SELLER")) {
+      return NextResponse.redirect(new URL("/admin/login", req.url));
     }
     return NextResponse.next();
   }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
@@ -15,17 +14,19 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await signIn("admin-credentials", {
-      email,
-      password,
-      redirect: false,
+    const res = await fetch("/api/admin/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
     });
-    if (!res?.ok) {
-      setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "로그인 실패");
       setLoading(false);
       return;
     }
     router.push("/seller/products");
+    router.refresh();
   }
 
   return (
@@ -60,8 +61,6 @@ export default function AdminLoginPage() {
         </form>
         <p className="text-center text-xs text-gray-400">
           고객 로그인은 <a href="/auth/signin" className="underline">여기</a>
-          {" · "}
-          <a href="/admin/setup" className="underline">최초 설정</a>
         </p>
       </div>
     </main>
