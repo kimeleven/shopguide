@@ -1,15 +1,11 @@
 import Link from "next/link";
 
-export default function SellerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b px-4 py-3 flex items-center gap-4 overflow-x-auto">
         <Link href="/seller/products" className="font-bold text-lg text-gray-900 whitespace-nowrap shrink-0">
-          ShopGuide 셀러
+          ShopGuide 관리
         </Link>
         <Link href="/seller/products" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
           상품관리

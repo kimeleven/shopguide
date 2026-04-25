@@ -14,10 +14,10 @@ export default function Home() {
             카카오로 시작하기
           </Link>
           <Link
-            href="/seller/products"
+            href="/admin/login"
             className="px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition"
           >
-            셀러 대시보드
+            관리자 로그인
           </Link>
         </div>
       </div>
