@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen antialiased text-gray-900 bg-white">
         <Providers>{children}</Providers>
       </body>
     </html>
