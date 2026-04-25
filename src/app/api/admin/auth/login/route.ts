@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { createAdminToken, adminCookieOptions } from "@/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
+  try {
   const { email, password } = await req.json();
   if (!email || !password) {
     return NextResponse.json({ error: "이메일과 비밀번호를 입력하세요." }, { status: 400 });
@@ -32,4 +33,8 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true });
   res.cookies.set(adminCookieOptions(token));
   return res;
+  } catch (e) {
+    console.error("Admin login error:", e);
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
 }
