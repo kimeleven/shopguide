@@ -15,6 +15,11 @@ interface Product {
   option3Values: string | null;
 }
 
+interface Shop {
+  id: string;
+  name: string;
+}
+
 const emptyForm = {
   name: "",
   price: "",
@@ -28,6 +33,8 @@ const emptyForm = {
 
 export default function SellerProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [shop, setShop] = useState<Shop | null>(null);
+  const [copied, setCopied] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -37,7 +44,21 @@ export default function SellerProductsPage() {
       .then((r) => r.json())
       .then(setProducts)
       .catch(() => {});
+    fetch("/api/shops")
+      .then((r) => r.json())
+      .then((data) => { if (data?.id) setShop(data); })
+      .catch(() => {});
   }, []);
+
+  const shopUrl = shop ? `${typeof window !== "undefined" ? window.location.origin : ""}/shop/${shop.id}` : "";
+
+  const handleCopyLink = () => {
+    if (!shopUrl) return;
+    navigator.clipboard.writeText(shopUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const openEdit = (p: Product) => {
     setEditingProduct(p);
@@ -114,6 +135,28 @@ export default function SellerProductsPage() {
 
   return (
     <div>
+      {shop && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex flex-wrap items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-blue-500 font-medium mb-0.5">내 쇼핑몰 링크</p>
+            <p className="text-sm text-blue-800 font-mono truncate">{shopUrl}</p>
+          </div>
+          <button
+            onClick={handleCopyLink}
+            className="shrink-0 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+          >
+            {copied ? "복사됨!" : "링크 복사"}
+          </button>
+          <a
+            href={shopUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 px-4 py-2 bg-white border border-blue-300 text-blue-700 text-sm rounded-lg hover:bg-blue-50 transition"
+          >
+            쇼핑몰 열기
+          </a>
+        </div>
+      )}
       <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
         <h1 className="text-2xl font-bold">상품 관리</h1>
         <button
