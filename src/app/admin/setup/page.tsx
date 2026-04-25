@@ -1,25 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function SetupPage() {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/admin/setup")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d.setup) router.replace("/admin/login");
-        else setChecking(false);
-      });
-  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,14 +29,12 @@ export default function SetupPage() {
     router.push("/admin/login");
   }
 
-  if (checking) return <div className="min-h-screen flex items-center justify-center">확인 중...</div>;
-
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">최초 관리자 설정</h1>
-          <p className="text-sm text-gray-500 mt-1">최초 1회만 실행됩니다.</p>
+          <p className="text-sm text-gray-500 mt-1">관리자 계정을 생성합니다.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -79,9 +67,12 @@ export default function SetupPage() {
             disabled={loading}
             className="w-full py-2 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
           >
-            {loading ? "처리 중..." : "관리자 계정 생성"}
+            {loading ? "생성 중..." : "관리자 계정 생성"}
           </button>
         </form>
+        <p className="text-center text-xs text-gray-400">
+          이미 계정이 있으신가요? <a href="/admin/login" className="underline">로그인</a>
+        </p>
       </div>
     </main>
   );

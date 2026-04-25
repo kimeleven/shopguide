@@ -4,17 +4,12 @@ import bcrypt from "bcryptjs";
 
 // First-time admin setup — only works if no ADMIN exists
 export async function POST(req: NextRequest) {
-  const adminExists = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-  if (adminExists) {
-    return NextResponse.json({ error: "Already set up" }, { status: 403 });
-  }
-
   const { name, email, password } = await req.json();
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const hashed = await bcrypt.hash(password, 10);
+  const hashed = await bcrypt.hash(password, 8);
   const user = await prisma.user.upsert({
     where: { email },
     update: { name, password: hashed, role: "ADMIN" },

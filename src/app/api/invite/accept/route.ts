@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   if (invite.usedAt) return NextResponse.json({ error: "Already used" }, { status: 410 });
   if (invite.expiresAt < new Date()) return NextResponse.json({ error: "Expired" }, { status: 410 });
 
-  const hashed = await bcrypt.hash(password, 10);
+  const hashed = await bcrypt.hash(password, 8);
 
   await prisma.user.upsert({
     where: { email: invite.email },
