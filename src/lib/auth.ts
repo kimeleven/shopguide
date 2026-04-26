@@ -14,7 +14,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    callbackUrl: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.callback-url"
+        : "next-auth.callback-url",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+    csrfToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Host-next-auth.csrf-token"
+        : "next-auth.csrf-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
@@ -28,12 +52,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET || "",
       allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          prompt: "login",
+        },
+      },
     }),
   ],
   callbacks: {
     async signIn({ user, account }) {
       console.log("[Auth] signIn callback:", { userId: user.id, provider: account?.provider });
       return true;
+    },
+    async redirect({ url, baseUrl }) {
+      // URL이 상대경로면 baseUrl 붙여서 반환
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      // URL이 같은 origin이면 그대로 반환
+      else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      // 기본적으로 baseUrl로 리다이렉트
+      return baseUrl;
     },
     async session({ session, user }) {
       if (session.user) {
