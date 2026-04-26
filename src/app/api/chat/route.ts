@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const MODELARK_API_KEY = process.env.MODELARK_API_KEY || process.env.GEMINI_API_KEY;
 
 interface Product {
   id: string;
@@ -27,18 +28,16 @@ interface ChatRequest {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = MODELARK_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { message: "Gemini API 키가 설정되지 않았습니다.", nextStep: "browse" },
+      { message: "MODELARK_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다.", nextStep: "browse" },
       { status: 500 }
     );
   }
 
   const body: ChatRequest = await req.json();
   const { messages, products, step, selectedProduct, selectedOptions } = body;
-
-  const genAI = new GoogleGenerativeAI(apiKey);
 
   const productList = products
     .map((p, i) => {
@@ -110,37 +109,38 @@ options: select_options 완료 시 {"옵션명": "선택값"} (그 외 null)
 shippingInfo: shipping 완료 시 {"recipientName":"","recipientPhone":"","zipCode":"","address":"","addressDetail":"","memo":""} (그 외 null)
 paymentMethod: payment 단계에서 선택 시 "KAKAO_SEND"|"TOSS_SEND"|"BANK_TRANSFER" (그 외 null)`;
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    systemInstruction,
-    generationConfig: {
-      responseMimeType: "application/json",
-    },
-  });
-
-  // 대화 히스토리 구성 (초기 assistant 인삿말 제외)
-  const conversationMessages = messages.slice(0, -1);
-  const lastUserMessage = messages[messages.length - 1];
-
-  // 첫 번째 메시지가 assistant이면 제거 (Gemini history는 user로 시작해야 함)
-  const filteredHistory = conversationMessages.filter(
-    (m, i) => !(i === 0 && m.role === "assistant")
-  );
-
-  const history = filteredHistory.map((m) => ({
-    role: m.role === "user" ? ("user" as const) : ("model" as const),
-    parts: [{ text: m.content }],
-  }));
-
   try {
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessage(lastUserMessage.content);
-    const text = result.response.text().trim();
+    const response = await fetch("https://api.modelark.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "kimi-k2.5",
+        messages: [
+          { role: "system", content: systemInstruction },
+          ...messages.filter((m, i) => !(i === 0 && m.role === "assistant")).map((m) => ({
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: m.content,
+          })),
+        ],
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`ModelArk API error: ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content?.trim() || "";
 
     const parsed = JSON.parse(text);
     return NextResponse.json(parsed);
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("ModelArk API error:", error);
     return NextResponse.json(
       {
         message: "죄송합니다, 일시적인 오류가 발생했습니다. 다시 시도해주세요.",
