@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useEffect } from "react";
 
-export default function AuthErrorPage() {
+function ErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
 
@@ -30,29 +31,44 @@ export default function AuthErrorPage() {
   };
 
   return (
+    <>
+      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+        <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </div>
+
+      <h1 className="text-2xl font-bold text-gray-900">로그인 오류</h1>
+
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-700">{getErrorMessage(error)}</p>
+        {error && <p className="text-red-500 text-sm mt-2 font-mono">{error}</p>}
+      </div>
+
+      <div className="space-y-3">
+        <Link href="/auth/signin" className="block w-full py-3 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-500 transition">
+          다시 로그인하기
+        </Link>
+        <Link href="/" className="block w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">
+          홈으로 돌아가기
+        </Link>
+      </div>
+    </>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center space-y-6">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-          <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-900">로그인 오류</h1>
-
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">{getErrorMessage(error)}</p>
-          {error && <p className="text-red-500 text-sm mt-2 font-mono">{error}</p>}
-        </div>
-
-        <div className="space-y-3">
-          <Link href="/auth/signin" className="block w-full py-3 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-500 transition">
-            다시 로그인하기
-          </Link>
-          <Link href="/" className="block w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">
-            홈으로 돌아가기
-          </Link>
-        </div>
+        <Suspense fallback={
+          <div className="py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto"></div>
+            <p className="text-sm text-gray-500 mt-2">로딩 중...</p>
+          </div>
+        }>
+          <ErrorContent />
+        </Suspense>
       </div>
     </main>
   );
