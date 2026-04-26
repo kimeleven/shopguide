@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
-import { KakaoAuthDebugger } from "@/components/KakaoAuthDebugger";
 
 export const metadata: Metadata = {
   title: "ShopGuide",
