@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef, use, useCallback } from "react";
 
 interface Product {
   id: string;
@@ -30,6 +30,15 @@ interface ShippingInfo {
   memo: string;
 }
 
+const EMPTY_SHIPPING: ShippingInfo = {
+  recipientName: "",
+  recipientPhone: "",
+  zipCode: "",
+  address: "",
+  addressDetail: "",
+  memo: "",
+};
+
 function ProductCard({ product, onSelect }: { product: Product; onSelect: (p: Product) => void }) {
   const options = [product.option1Name, product.option2Name, product.option3Name].filter(Boolean);
   return (
@@ -53,11 +62,13 @@ function OptionSelector({
   selectedOptions,
   onOptionChange,
   onConfirm,
+  onBack,
 }: {
   product: Product;
   selectedOptions: Record<string, string>;
   onOptionChange: (name: string, value: string) => void;
   onConfirm: () => void;
+  onBack: () => void;
 }) {
   const optionGroups = [
     { name: product.option1Name, values: product.option1Values },
@@ -69,8 +80,16 @@ function OptionSelector({
 
   return (
     <div className="border rounded-xl p-4 bg-white shadow space-y-4">
-      <div className="font-semibold text-sm text-gray-700">
-        <span className="text-yellow-600">{product.name}</span> 옵션 선택
+      <div className="flex items-center justify-between">
+        <div className="font-semibold text-sm text-gray-700">
+          <span className="text-yellow-600">{product.name}</span> 옵션 선택
+        </div>
+        <button
+          onClick={onBack}
+          className="text-xs text-gray-400 hover:text-gray-600 underline transition"
+        >
+          ← 다른 상품 보기
+        </button>
       </div>
       {optionGroups.map(({ name, values }) => (
         <div key={name}>
@@ -111,10 +130,12 @@ function ShippingForm({
   shippingInfo,
   onChange,
   onSubmit,
+  onBack,
 }: {
   shippingInfo: ShippingInfo;
   onChange: (info: ShippingInfo) => void;
   onSubmit: () => void;
+  onBack: () => void;
 }) {
   const set = (field: keyof ShippingInfo, value: string) =>
     onChange({ ...shippingInfo, [field]: value });
@@ -127,7 +148,15 @@ function ShippingForm({
 
   return (
     <div className="border rounded-xl p-4 bg-white shadow space-y-3">
-      <div className="font-semibold text-sm text-gray-700">배송지 정보 입력</div>
+      <div className="flex items-center justify-between">
+        <div className="font-semibold text-sm text-gray-700">배송지 정보 입력</div>
+        <button
+          onClick={onBack}
+          className="text-xs text-gray-400 hover:text-gray-600 underline transition"
+        >
+          ← 옵션 다시 선택
+        </button>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
           <label className="block text-xs text-gray-500 mb-1">받는 분 *</label>
@@ -201,7 +230,13 @@ function ShippingForm({
   );
 }
 
-function PaymentButtons({ onSelect }: { onSelect: (method: string) => void }) {
+function PaymentButtons({
+  onSelect,
+  onBack,
+}: {
+  onSelect: (method: string) => void;
+  onBack: () => void;
+}) {
   const methods = [
     { label: "카카오페이로 보내기", value: "KAKAO_SEND", color: "bg-yellow-400 hover:bg-yellow-500 text-black" },
     { label: "토스로 보내기", value: "TOSS_SEND", color: "bg-blue-500 hover:bg-blue-600 text-white" },
@@ -209,7 +244,15 @@ function PaymentButtons({ onSelect }: { onSelect: (method: string) => void }) {
   ];
   return (
     <div className="border rounded-xl p-4 bg-white shadow space-y-2">
-      <div className="font-semibold text-sm text-gray-700 mb-3">결제 방법을 선택해주세요</div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="font-semibold text-sm text-gray-700">결제 방법을 선택해주세요</div>
+        <button
+          onClick={onBack}
+          className="text-xs text-gray-400 hover:text-gray-600 underline transition"
+        >
+          ← 배송지 수정
+        </button>
+      </div>
       {methods.map(({ label, value, color }) => (
         <button
           key={value}
@@ -223,6 +266,26 @@ function PaymentButtons({ onSelect }: { onSelect: (method: string) => void }) {
   );
 }
 
+function DoneCard({ onRestart }: { onRestart: () => void }) {
+  return (
+    <div className="border rounded-xl p-6 bg-white shadow text-center space-y-4">
+      <div className="text-3xl">🎉</div>
+      <div className="font-semibold text-gray-800">주문이 완료되었습니다!</div>
+      <div className="text-sm text-gray-500">
+        셀러가 확인 후 연락드릴 예정입니다.
+        <br />
+        감사합니다.
+      </div>
+      <button
+        onClick={onRestart}
+        className="w-full py-2.5 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-500 transition"
+      >
+        다시 주문하기
+      </button>
+    </div>
+  );
+}
+
 export default function ShopPage({ params }: { params: Promise<{ shopId: string }> }) {
   const { shopId } = use(params);
   const [products, setProducts] = useState<Product[]>([]);
@@ -231,30 +294,24 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   const [step, setStep] = useState<Step>("browse");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
-  const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
-    recipientName: "",
-    recipientPhone: "",
-    zipCode: "",
-    address: "",
-    addressDetail: "",
-    memo: "",
-  });
+  const [shippingInfo, setShippingInfo] = useState<ShippingInfo>(EMPTY_SHIPPING);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const makeGreeting = (data: Product[]) => ({
+    role: "assistant" as const,
+    content:
+      data.length > 0
+        ? "안녕하세요! 쇼핑을 도와드릴게요.\n아래 상품 중 원하시는 것을 선택해주세요."
+        : "안녕하세요! 현재 등록된 상품이 없습니다.",
+  });
 
   useEffect(() => {
     fetch(`/api/products?shopId=${shopId}`)
       .then((r) => r.json())
       .then((data) => {
         setProducts(data);
-        if (data.length > 0) {
-          setMessages([
-            {
-              role: "assistant",
-              content: "안녕하세요! 쇼핑을 도와드릴게요.\n아래 상품 중 원하시는 것을 선택해주세요.",
-            },
-          ]);
-        }
+        setMessages([makeGreeting(data)]);
       })
       .catch(() => {});
   }, [shopId]);
@@ -263,11 +320,19 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, step]);
 
-  // 상품 카드 클릭 — Gemini 없이 직접 처리
+  const handleRestart = useCallback(() => {
+    setStep("browse");
+    setSelectedProduct(null);
+    setSelectedOptions({});
+    setShippingInfo(EMPTY_SHIPPING);
+    setInput("");
+    setMessages([makeGreeting(products)]);
+  }, [products]);
+
+  // 상품 카드 클릭
   const handleProductSelect = (product: Product) => {
     setSelectedProduct(product);
-    const hasOptions =
-      product.option1Name || product.option2Name || product.option3Name;
+    const hasOptions = product.option1Name || product.option2Name || product.option3Name;
     const nextStep: Step = hasOptions ? "select_options" : "shipping";
     setStep(nextStep);
     setMessages((prev) => [
@@ -282,7 +347,42 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     ]);
   };
 
-  // 옵션 확인 — Gemini 없이 직접 처리
+  // 옵션 → browse 뒤로가기
+  const handleBackToBrowse = () => {
+    setStep("browse");
+    setSelectedProduct(null);
+    setSelectedOptions({});
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "다른 상품을 선택해주세요." },
+    ]);
+  };
+
+  // shipping → select_options 뒤로가기
+  const handleBackToOptions = () => {
+    if (!selectedProduct) return;
+    const hasOptions = selectedProduct.option1Name || selectedProduct.option2Name || selectedProduct.option3Name;
+    if (hasOptions) {
+      setStep("select_options");
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "옵션을 다시 선택해주세요." },
+      ]);
+    } else {
+      handleBackToBrowse();
+    }
+  };
+
+  // payment → shipping 뒤로가기
+  const handleBackToShipping = () => {
+    setStep("shipping");
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "배송지 정보를 수정해주세요." },
+    ]);
+  };
+
+  // 옵션 확인
   const handleOptionsConfirm = () => {
     setStep("shipping");
     const optionSummary = Object.entries(selectedOptions)
@@ -295,7 +395,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     ]);
   };
 
-  // 배송지 폼 제출 — Gemini 없이 직접 처리
+  // 배송지 폼 제출
   const handleShippingSubmit = () => {
     setStep("payment");
     const { recipientName, recipientPhone, address } = shippingInfo;
@@ -306,7 +406,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     ]);
   };
 
-  // 결제 방법 선택 — /api/orders 직접 호출
+  // 결제 방법 선택
   const handlePaymentSelect = async (paymentMethod: string) => {
     if (!selectedProduct) return;
     setIsLoading(true);
@@ -349,8 +449,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
           ...prev,
           {
             role: "assistant",
-            content:
-              "주문이 완료되었습니다!\n셀러가 확인 후 연락드릴 예정입니다.\n감사합니다.",
+            content: "주문이 완료되었습니다!\n셀러가 확인 후 연락드릴 예정입니다.\n감사합니다.",
           },
         ]);
       } else {
@@ -456,6 +555,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
               setSelectedOptions((prev) => ({ ...prev, [name]: value }))
             }
             onConfirm={handleOptionsConfirm}
+            onBack={handleBackToBrowse}
           />
         )}
 
@@ -465,13 +565,17 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
             shippingInfo={shippingInfo}
             onChange={setShippingInfo}
             onSubmit={handleShippingSubmit}
+            onBack={handleBackToOptions}
           />
         )}
 
         {/* 결제 버튼 */}
         {step === "payment" && (
-          <PaymentButtons onSelect={handlePaymentSelect} />
+          <PaymentButtons onSelect={handlePaymentSelect} onBack={handleBackToShipping} />
         )}
+
+        {/* 주문 완료 */}
+        {step === "done" && <DoneCard onRestart={handleRestart} />}
 
         {isLoading && (
           <div className="flex justify-start">
