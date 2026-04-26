@@ -19,6 +19,12 @@ interface Message {
   content: string;
 }
 
+interface ShopInfo {
+  bankName: string | null;
+  bankAccount: string | null;
+  bankHolder: string | null;
+}
+
 type Step = "browse" | "select_options" | "shipping" | "payment" | "done";
 
 interface ShippingInfo {
@@ -266,16 +272,50 @@ function PaymentButtons({
   );
 }
 
-function DoneCard({ onRestart }: { onRestart: () => void }) {
+function DoneCard({
+  onRestart,
+  paymentMethod,
+  shopInfo,
+}: {
+  onRestart: () => void;
+  paymentMethod: string | null;
+  shopInfo: ShopInfo | null;
+}) {
+  const showBankInfo =
+    paymentMethod === "BANK_TRANSFER" &&
+    shopInfo?.bankAccount;
+
   return (
     <div className="border rounded-xl p-6 bg-white shadow text-center space-y-4">
       <div className="text-3xl">🎉</div>
       <div className="font-semibold text-gray-800">주문이 완료되었습니다!</div>
-      <div className="text-sm text-gray-500">
-        셀러가 확인 후 연락드릴 예정입니다.
-        <br />
-        감사합니다.
-      </div>
+      {showBankInfo ? (
+        <div className="text-left bg-gray-50 rounded-xl p-4 space-y-1 text-sm">
+          <p className="font-semibold text-gray-700 mb-2">계좌이체 안내</p>
+          {shopInfo?.bankName && (
+            <p className="text-gray-600">
+              은행: <span className="font-medium text-gray-800">{shopInfo.bankName}</span>
+            </p>
+          )}
+          <p className="text-gray-600">
+            계좌번호: <span className="font-medium text-gray-800">{shopInfo?.bankAccount}</span>
+          </p>
+          {shopInfo?.bankHolder && (
+            <p className="text-gray-600">
+              예금주: <span className="font-medium text-gray-800">{shopInfo.bankHolder}</span>
+            </p>
+          )}
+          <p className="text-xs text-gray-400 mt-2">
+            위 계좌로 입금 완료 후 셀러가 확인하여 연락드립니다.
+          </p>
+        </div>
+      ) : (
+        <div className="text-sm text-gray-500">
+          셀러가 확인 후 연락드릴 예정입니다.
+          <br />
+          감사합니다.
+        </div>
+      )}
       <button
         onClick={onRestart}
         className="w-full py-2.5 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-500 transition"
@@ -289,12 +329,14 @@ function DoneCard({ onRestart }: { onRestart: () => void }) {
 export default function ShopPage({ params }: { params: Promise<{ shopId: string }> }) {
   const { shopId } = use(params);
   const [products, setProducts] = useState<Product[]>([]);
+  const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [step, setStep] = useState<Step>("browse");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>(EMPTY_SHIPPING);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -314,6 +356,12 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
         setMessages([makeGreeting(data)]);
       })
       .catch(() => {});
+    fetch(`/api/shops/${shopId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.id) setShopInfo(data);
+      })
+      .catch(() => {});
   }, [shopId]);
 
   useEffect(() => {
@@ -325,6 +373,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     setSelectedProduct(null);
     setSelectedOptions({});
     setShippingInfo(EMPTY_SHIPPING);
+    setSelectedPaymentMethod(null);
     setInput("");
     setMessages([makeGreeting(products)]);
   }, [products]);
@@ -409,6 +458,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   // 결제 방법 선택
   const handlePaymentSelect = async (paymentMethod: string) => {
     if (!selectedProduct) return;
+    setSelectedPaymentMethod(paymentMethod);
     setIsLoading(true);
 
     const methodLabel: Record<string, string> = {
@@ -575,7 +625,13 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
         )}
 
         {/* 주문 완료 */}
-        {step === "done" && <DoneCard onRestart={handleRestart} />}
+        {step === "done" && (
+          <DoneCard
+            onRestart={handleRestart}
+            paymentMethod={selectedPaymentMethod}
+            shopInfo={shopInfo}
+          />
+        )}
 
         {isLoading && (
           <div className="flex justify-start">

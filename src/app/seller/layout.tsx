@@ -18,6 +18,9 @@ export default function SellerLayout({
         <Link href="/seller/orders" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
           주문관리
         </Link>
+        <Link href="/seller/settings" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
+          설정
+        </Link>
         <Link href="/admin/invite" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
           사용자 초대
         </Link>
