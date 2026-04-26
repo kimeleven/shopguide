@@ -338,6 +338,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>(EMPTY_SHIPPING);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const makeGreeting = (data: Product[]) => ({
@@ -349,19 +350,37 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   });
 
   useEffect(() => {
-    fetch(`/api/products?shopId=${shopId}`)
+    let cancelled = false;
+
+    const fetchProducts = fetch(`/api/products?shopId=${shopId}`)
+      .then((r) => r.json())
+      .then((data: Product[]) => {
+        if (!cancelled) {
+          setProducts(data);
+          setMessages([makeGreeting(data)]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMessages([{
+            role: "assistant",
+            content: "상품 정보를 불러오지 못했습니다.\n잠시 후 페이지를 새로고침 해주세요.",
+          }]);
+        }
+      });
+
+    const fetchShop = fetch(`/api/shops/${shopId}`)
       .then((r) => r.json())
       .then((data) => {
-        setProducts(data);
-        setMessages([makeGreeting(data)]);
+        if (!cancelled && data?.id) setShopInfo(data);
       })
       .catch(() => {});
-    fetch(`/api/shops/${shopId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.id) setShopInfo(data);
-      })
-      .catch(() => {});
+
+    Promise.all([fetchProducts, fetchShop]).finally(() => {
+      if (!cancelled) setIsInitialLoading(false);
+    });
+
+    return () => { cancelled = true; };
   }, [shopId]);
 
   useEffect(() => {
@@ -570,6 +589,13 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 max-w-2xl mx-auto w-full pb-24">
+        {isInitialLoading && (
+          <div className="flex justify-start">
+            <div className="bg-white text-gray-400 shadow px-4 py-3 rounded-2xl text-sm animate-pulse">
+              쇼핑몰 정보를 불러오는 중...
+            </div>
+          </div>
+        )}
         {messages.map((msg, i) => (
           <div
             key={i}
