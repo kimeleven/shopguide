@@ -53,11 +53,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET || "",
       allowDangerousEmailAccountLinking: true,
-      authorization: {
-        params: {
-          prompt: "login",
-        },
-      },
+      authorization: "https://kauth.kakao.com/oauth/authorize?scope&prompt=login",
     }),
   ],
   callbacks: {

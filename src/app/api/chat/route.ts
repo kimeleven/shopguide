@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const MODELARK_API_KEY = process.env.MODELARK_API_KEY || process.env.GEMINI_API_KEY;
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface Product {
   id: string;
@@ -28,10 +27,10 @@ interface ChatRequest {
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = MODELARK_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { message: "MODELARK_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다.", nextStep: "browse" },
+      { message: "GEMINI_API_KEY가 설정되지 않았습니다.", nextStep: "browse" },
       { status: 500 }
     );
   }
@@ -110,37 +109,30 @@ shippingInfo: shipping 완료 시 {"recipientName":"","recipientPhone":"","zipCo
 paymentMethod: payment 단계에서 선택 시 "KAKAO_SEND"|"TOSS_SEND"|"BANK_TRANSFER" (그 외 null)`;
 
   try {
-    const response = await fetch("https://api.modelark.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "kimi-k2.5",
-        messages: [
-          { role: "system", content: systemInstruction },
-          ...messages.filter((m, i) => !(i === 0 && m.role === "assistant")).map((m) => ({
-            role: m.role === "assistant" ? "assistant" : "user",
-            content: m.content,
-          })),
-        ],
-        temperature: 0.7,
-        max_tokens: 4096,
-      }),
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      systemInstruction,
     });
 
-    if (!response.ok) {
-      throw new Error(`ModelArk API error: ${await response.text()}`);
-    }
+    const history = messages
+      .filter((m, i) => !(i === 0 && m.role === "assistant"))
+      .slice(0, -1)
+      .map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
 
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content?.trim() || "";
+    const lastMessage = messages[messages.length - 1];
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(lastMessage.content);
+    const text = result.response.text().trim();
 
-    const parsed = JSON.parse(text);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
     return NextResponse.json(parsed);
   } catch (error) {
-    console.error("ModelArk API error:", error);
+    console.error("Gemini API error:", error);
     return NextResponse.json(
       {
         message: "죄송합니다, 일시적인 오류가 발생했습니다. 다시 시도해주세요.",

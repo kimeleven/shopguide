@@ -1,6 +1,27 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+
+  if (session?.user) {
+    const shop = await prisma.shop.findFirst();
+    if (shop) {
+      redirect(`/shop/${shop.id}`);
+    }
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-gray-900">ShopGuide</h1>
+          <p className="text-gray-500">아직 등록된 쇼핑몰이 없습니다.</p>
+          <p className="text-sm text-gray-400">셀러 등록 후 이용해 주세요.</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center space-y-6">

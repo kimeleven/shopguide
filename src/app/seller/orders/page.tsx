@@ -130,6 +130,12 @@ export default function SellerOrdersPage() {
                   </select>
                 </div>
               </div>
+              {(order.buyer.name || order.buyer.email) && (
+                <div className="text-xs text-gray-400">
+                  구매자: {order.buyer.name || order.buyer.email}
+                  {order.buyer.name && order.buyer.email && ` (${order.buyer.email})`}
+                </div>
+              )}
               <div className="text-sm space-y-1">
                 {order.items.map((item) => (
                   <div key={item.id} className="flex justify-between">
@@ -140,9 +146,15 @@ export default function SellerOrdersPage() {
                       {item.option3 && ` / ${item.option3}`}
                       {" x "}{item.quantity}
                     </span>
-                    <span>{item.price.toLocaleString()}원</span>
+                    <span>{(item.price * item.quantity).toLocaleString()}원</span>
                   </div>
                 ))}
+                <div className="flex justify-between font-semibold text-gray-800 border-t pt-1 mt-1">
+                  <span>합계</span>
+                  <span>
+                    {order.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString()}원
+                  </span>
+                </div>
               </div>
               <div className="text-sm text-gray-500 border-t pt-2">
                 <p>{order.recipientName} / {order.recipientPhone}</p>
