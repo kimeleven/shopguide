@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LogoutButton from "@/components/LogoutButton";
 
 export default function SellerLayout({
   children,
@@ -20,6 +21,7 @@ export default function SellerLayout({
         <Link href="/admin/invite" className="text-gray-600 hover:text-gray-900 whitespace-nowrap">
           사용자 초대
         </Link>
+        <LogoutButton />
       </nav>
       <div className="max-w-5xl mx-auto px-4 py-6">{children}</div>
     </div>
