@@ -12,6 +12,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30일
     updateAge: 24 * 60 * 60, // 24시간마다 세션 업데이트
   },
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
       name: process.env.NODE_ENV === "production"
