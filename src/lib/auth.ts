@@ -7,6 +7,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
   debug: false,
+  session: {
+    strategy: "database",
+    maxAge: 30 * 24 * 60 * 60, // 30일
+    updateAge: 24 * 60 * 60, // 24시간마다 세션 업데이트
+  },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   providers: [
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
