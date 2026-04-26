@@ -6,7 +6,7 @@ import { signIn, useSession } from "next-auth/react";
 interface LogEntry {
   timestamp: string;
   step: string;
-  data?: unknown;
+  data?: Record<string, unknown>;
   error?: string;
 }
 
@@ -15,7 +15,7 @@ export function KakaoAuthDebugger() {
   const [isOpen, setIsOpen] = useState(false);
   const { data: session, status } = useSession();
 
-  const addLog = (step: string, data?: unknown, error?: string) => {
+  const addLog = (step: string, data?: Record<string, unknown>, error?: string) => {
     const log: LogEntry = {
       timestamp: new Date().toISOString().split("T")[1].slice(0, 12),
       step,
@@ -30,15 +30,15 @@ export function KakaoAuthDebugger() {
     const error = url.searchParams.get("error");
     const callbackUrl = url.searchParams.get("callbackUrl");
 
-    addLog("PAGE_LOAD", { url: window.location.href, error, callbackUrl });
+    addLog("PAGE_LOAD", { url: window.location.href, error: error || undefined, callbackUrl: callbackUrl || undefined });
 
     if (error) {
-      addLog("URL_ERROR_DETECTED", { error, callbackUrl });
+      addLog("URL_ERROR_DETECTED", { error, callbackUrl: callbackUrl || undefined });
     }
   }, []);
 
   useEffect(() => {
-    addLog("SESSION_STATUS_CHANGED", { status, session });
+    addLog("SESSION_STATUS_CHANGED", { status, session: session ? { user: session.user } : null });
   }, [status, session]);
 
   const handleKakaoLogin = async () => {
@@ -50,7 +50,7 @@ export function KakaoAuthDebugger() {
         redirect: false,
       });
 
-      addLog("KAKAO_LOGIN_RESULT", result);
+      addLog("KAKAO_LOGIN_RESULT", { result: result ? { url: result.url, error: result.error } : null });
 
       if (result?.error) {
         addLog("KAKAO_LOGIN_ERROR", undefined, result.error);

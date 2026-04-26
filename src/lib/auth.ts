@@ -74,8 +74,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account, profile, isNewUser }) {
       debugLog("signIn event", { user: { id: user.id, email: user.email }, isNewUser });
     },
-    async signOut({ session, token }) {
-      debugLog("signOut event", { session, token });
+    async signOut(message) {
+      debugLog("signOut event", { message });
     },
     async createUser({ user }) {
       debugLog("createUser event", { user: { id: user.id, email: user.email } });

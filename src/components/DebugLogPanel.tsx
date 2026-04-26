@@ -142,7 +142,7 @@ export function DebugLogPanel() {
               <div className="break-all font-mono">{log.message}</div>
               {log.data && (
                 <pre className="mt-1 text-[10px] opacity-70 overflow-x-auto">
-                  {JSON.stringify(log.data, null, 2).slice(0, 200)}
+                  {JSON.stringify(log.data as Record<string, unknown>, null, 2).slice(0, 200)}
                 </pre>
               )}
             </div>
