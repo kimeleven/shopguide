@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { KakaoAuthDebugger } from "@/components/KakaoAuthDebugger";
 
 export const metadata: Metadata = {
   title: "ShopGuide",
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="min-h-screen antialiased text-gray-900 bg-white">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
