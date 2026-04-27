@@ -321,14 +321,23 @@ function PaymentButtons({
   );
 }
 
+interface CompletedOrder {
+  id: string;
+  productName: string;
+  quantity: number;
+  totalPrice: number;
+}
+
 function DoneCard({
   onRestart,
   paymentMethod,
   shopInfo,
+  completedOrder,
 }: {
   onRestart: () => void;
   paymentMethod: string | null;
   shopInfo: ShopInfo | null;
+  completedOrder: CompletedOrder | null;
 }) {
   const showBankInfo =
     paymentMethod === "BANK_TRANSFER" &&
@@ -338,6 +347,17 @@ function DoneCard({
     <div className="border rounded-xl p-6 bg-white shadow text-center space-y-4">
       <div className="text-3xl">🎉</div>
       <div className="font-semibold text-gray-800">주문이 완료되었습니다!</div>
+      {completedOrder && (
+        <div className="text-left bg-yellow-50 border border-yellow-200 rounded-xl p-4 space-y-1 text-sm">
+          <p className="text-xs text-yellow-600 font-medium mb-2">
+            주문번호: <span className="font-mono font-bold">{completedOrder.id.slice(0, 8).toUpperCase()}</span>
+          </p>
+          <div className="flex justify-between text-gray-700">
+            <span>{completedOrder.productName}{completedOrder.quantity > 1 && ` × ${completedOrder.quantity}`}</span>
+            <span className="font-semibold">{completedOrder.totalPrice.toLocaleString()}원</span>
+          </div>
+        </div>
+      )}
       {showBankInfo ? (
         <div className="text-left bg-gray-50 rounded-xl p-4 space-y-1 text-sm">
           <p className="font-semibold text-gray-700 mb-2">계좌이체 안내</p>
@@ -392,6 +412,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [completedOrder, setCompletedOrder] = useState<CompletedOrder | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const makeGreeting = (data: Product[]) => ({
@@ -471,6 +492,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     setSelectedPaymentMethod(null);
     setQuantity(1);
     setInput("");
+    setCompletedOrder(null);
     setMessages([makeGreeting(products)]);
   }, [products]);
 
@@ -592,6 +614,13 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
       });
 
       if (res.ok) {
+        const order = await res.json();
+        setCompletedOrder({
+          id: order.id,
+          productName: selectedProduct.name,
+          quantity,
+          totalPrice: selectedProduct.price * quantity,
+        });
         setStep("done");
         setMessages((prev) => [
           ...prev,
@@ -762,6 +791,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
             onRestart={handleRestart}
             paymentMethod={selectedPaymentMethod}
             shopInfo={shopInfo}
+            completedOrder={completedOrder}
           />
         )}
 
