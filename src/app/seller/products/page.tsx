@@ -38,6 +38,7 @@ export default function SellerProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetch("/api/products")
@@ -88,28 +89,39 @@ export default function SellerProductsPage() {
       price: parseInt(form.price) || 0,
     };
 
-    if (editingProduct) {
-      const res = await fetch(`/api/products/${editingProduct.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-        closeForm();
+    setIsSubmitting(true);
+    try {
+      if (editingProduct) {
+        const res = await fetch(`/api/products/${editingProduct.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const updated = await res.json();
+          setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+          closeForm();
+        } else {
+          alert("상품 수정에 실패했습니다. 다시 시도해주세요.");
+        }
+      } else {
+        const res = await fetch("/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const product = await res.json();
+          setProducts((prev) => [product, ...prev]);
+          closeForm();
+        } else {
+          alert("상품 등록에 실패했습니다. 다시 시도해주세요.");
+        }
       }
-    } else {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const product = await res.json();
-        setProducts((prev) => [product, ...prev]);
-        closeForm();
-      }
+    } catch {
+      alert("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -118,6 +130,8 @@ export default function SellerProductsPage() {
     const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
     if (res.ok) {
       setProducts((prev) => prev.filter((p) => p.id !== id));
+    } else {
+      alert("상품 삭제에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -130,6 +144,8 @@ export default function SellerProductsPage() {
     if (res.ok) {
       const updated = await res.json();
       setProducts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    } else {
+      alert("상태 변경에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -217,10 +233,19 @@ export default function SellerProductsPage() {
             </div>
           ))}
           <div className="flex gap-2">
-            <button type="submit" className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-              {editingProduct ? "수정 완료" : "등록하기"}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "처리 중..." : editingProduct ? "수정 완료" : "등록하기"}
             </button>
-            <button type="button" onClick={closeForm} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+            <button
+              type="button"
+              onClick={closeForm}
+              disabled={isSubmitting}
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+            >
               취소
             </button>
           </div>
