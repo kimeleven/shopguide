@@ -49,6 +49,7 @@ export default function SellerOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetch("/api/orders")
@@ -59,15 +60,24 @@ export default function SellerOrdersPage() {
   }, []);
 
   const handleExport = async () => {
-    const res = await fetch("/api/orders/export");
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `orders_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
+    setIsExporting(true);
+    try {
+      const res = await fetch("/api/orders/export");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `orders_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        alert("엑셀 다운로드에 실패했습니다. 다시 시도해주세요.");
+      }
+    } catch {
+      alert("엑셀 다운로드 중 오류가 발생했습니다.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -91,9 +101,10 @@ export default function SellerOrdersPage() {
         <h1 className="text-2xl font-bold">주문 관리</h1>
         <button
           onClick={handleExport}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shrink-0"
+          disabled={isExporting}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          엑셀 다운로드
+          {isExporting ? "다운로드 중..." : "엑셀 다운로드"}
         </button>
       </div>
 
@@ -163,8 +174,12 @@ export default function SellerOrdersPage() {
                 </div>
               </div>
               <div className="text-sm text-gray-500 border-t pt-2">
-                <p>{order.recipientName} / {order.recipientPhone}</p>
-                <p>{order.zipCode && `(${order.zipCode}) `}{order.address} {order.addressDetail}</p>
+                {(order.recipientName || order.recipientPhone) && (
+                  <p>{order.recipientName ?? "-"} / {order.recipientPhone ?? "-"}</p>
+                )}
+                {order.address && (
+                  <p>{order.zipCode && `(${order.zipCode}) `}{order.address}{order.addressDetail && ` ${order.addressDetail}`}</p>
+                )}
                 {order.memo && <p className="text-gray-400">메모: {order.memo}</p>}
               </div>
             </div>
