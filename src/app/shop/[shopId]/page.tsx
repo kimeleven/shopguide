@@ -21,6 +21,7 @@ interface Message {
 }
 
 interface ShopInfo {
+  name: string | null;
   bankName: string | null;
   bankAccount: string | null;
   bankHolder: string | null;
@@ -64,16 +65,49 @@ function ProductCard({ product, onSelect }: { product: Product; onSelect: (p: Pr
   );
 }
 
+function QuantityControl({
+  quantity,
+  onChange,
+}: {
+  quantity: number;
+  onChange: (q: number) => void;
+}) {
+  return (
+    <div>
+      <div className="text-xs text-gray-500 mb-2 font-medium">수량</div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onChange(Math.max(1, quantity - 1))}
+          className="w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-yellow-400 hover:text-black flex items-center justify-center text-lg font-semibold transition"
+        >
+          −
+        </button>
+        <span className="w-8 text-center font-semibold text-gray-800">{quantity}</span>
+        <button
+          onClick={() => onChange(Math.min(99, quantity + 1))}
+          className="w-8 h-8 rounded-full border border-gray-300 text-gray-600 hover:border-yellow-400 hover:text-black flex items-center justify-center text-lg font-semibold transition"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OptionSelector({
   product,
   selectedOptions,
+  quantity,
   onOptionChange,
+  onQuantityChange,
   onConfirm,
   onBack,
 }: {
   product: Product;
   selectedOptions: Record<string, string>;
+  quantity: number;
   onOptionChange: (name: string, value: string) => void;
+  onQuantityChange: (q: number) => void;
   onConfirm: () => void;
   onBack: () => void;
 }) {
@@ -122,12 +156,13 @@ function OptionSelector({
           </div>
         </div>
       ))}
+      <QuantityControl quantity={quantity} onChange={onQuantityChange} />
       <button
         onClick={onConfirm}
         disabled={!allSelected}
         className="w-full py-2 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-500 transition disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        옵션 선택 완료
+        선택 완료 · {(product.price * quantity).toLocaleString()}원
       </button>
     </div>
   );
@@ -138,11 +173,17 @@ function ShippingForm({
   onChange,
   onSubmit,
   onBack,
+  quantity,
+  onQuantityChange,
+  showQuantity,
 }: {
   shippingInfo: ShippingInfo;
   onChange: (info: ShippingInfo) => void;
   onSubmit: () => void;
   onBack: () => void;
+  quantity: number;
+  onQuantityChange: (q: number) => void;
+  showQuantity: boolean;
 }) {
   const set = (field: keyof ShippingInfo, value: string) =>
     onChange({ ...shippingInfo, [field]: value });
@@ -164,6 +205,9 @@ function ShippingForm({
           ← 옵션 다시 선택
         </button>
       </div>
+      {showQuantity && (
+        <QuantityControl quantity={quantity} onChange={onQuantityChange} />
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div>
           <label className="block text-xs text-gray-500 mb-1">받는 분 *</label>
@@ -345,6 +389,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>(EMPTY_SHIPPING);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -401,6 +446,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
       setSelectedProduct(data.selectedProduct);
       setSelectedOptions(data.selectedOptions);
       setShippingInfo(data.shippingInfo);
+      if (data.quantity) setQuantity(data.quantity);
       setStep("payment");
       setMessages((prev) => [
         ...prev,
@@ -423,6 +469,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     setSelectedOptions({});
     setShippingInfo(EMPTY_SHIPPING);
     setSelectedPaymentMethod(null);
+    setQuantity(1);
     setInput("");
     setMessages([makeGreeting(products)]);
   }, [products]);
@@ -450,6 +497,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     setStep("browse");
     setSelectedProduct(null);
     setSelectedOptions({});
+    setQuantity(1);
     setMessages((prev) => [
       ...prev,
       { role: "assistant", content: "다른 상품을 선택해주세요." },
@@ -486,9 +534,10 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     const optionSummary = Object.entries(selectedOptions)
       .map(([k, v]) => `${k}: ${v}`)
       .join(", ");
+    const quantityText = quantity > 1 ? ` · ${quantity}개` : "";
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: `옵션 선택: ${optionSummary}` },
+      { role: "user", content: `옵션 선택: ${optionSummary}${quantityText}` },
       { role: "assistant", content: "옵션을 선택하셨습니다.\n배송지 정보를 입력해주세요." },
     ]);
   };
@@ -532,7 +581,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
           items: [
             {
               productId: selectedProduct.id,
-              quantity: 1,
+              quantity,
               option1: selectedOptions[selectedProduct.option1Name || ""] || null,
               option2: selectedOptions[selectedProduct.option2Name || ""] || null,
               option3: selectedOptions[selectedProduct.option3Name || ""] || null,
@@ -615,7 +664,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white border-b px-4 py-3 text-center font-bold text-lg sticky top-0 z-10">
-        ShopGuide
+        {shopInfo?.name || "ShopGuide"}
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 max-w-2xl mx-auto w-full pb-24">
@@ -657,9 +706,11 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
           <OptionSelector
             product={selectedProduct}
             selectedOptions={selectedOptions}
+            quantity={quantity}
             onOptionChange={(name, value) =>
               setSelectedOptions((prev) => ({ ...prev, [name]: value }))
             }
+            onQuantityChange={setQuantity}
             onConfirm={handleOptionsConfirm}
             onBack={handleBackToBrowse}
           />
@@ -672,6 +723,9 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
             onChange={setShippingInfo}
             onSubmit={handleShippingSubmit}
             onBack={handleBackToOptions}
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            showQuantity={!selectedProduct?.option1Name && !selectedProduct?.option2Name && !selectedProduct?.option3Name}
           />
         )}
 
@@ -688,6 +742,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
                     selectedProduct,
                     selectedOptions,
                     shippingInfo,
+                    quantity,
                   }));
                   signIn("kakao", { callbackUrl: window.location.href });
                 }}
