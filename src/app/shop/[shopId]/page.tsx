@@ -239,9 +239,11 @@ function ShippingForm({
 function PaymentButtons({
   onSelect,
   onBack,
+  disabled,
 }: {
   onSelect: (method: string) => void;
   onBack: () => void;
+  disabled?: boolean;
 }) {
   const methods = [
     { label: "카카오페이로 보내기", value: "KAKAO_SEND", color: "bg-yellow-400 hover:bg-yellow-500 text-black" },
@@ -254,7 +256,8 @@ function PaymentButtons({
         <div className="font-semibold text-sm text-gray-700">결제 방법을 선택해주세요</div>
         <button
           onClick={onBack}
-          className="text-xs text-gray-400 hover:text-gray-600 underline transition"
+          disabled={disabled}
+          className="text-xs text-gray-400 hover:text-gray-600 underline transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           ← 배송지 수정
         </button>
@@ -263,7 +266,8 @@ function PaymentButtons({
         <button
           key={value}
           onClick={() => onSelect(value)}
-          className={`w-full py-2.5 rounded-full text-sm font-semibold transition ${color}`}
+          disabled={disabled}
+          className={`w-full py-2.5 rounded-full text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${color}`}
         >
           {label}
         </button>
@@ -647,7 +651,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
 
         {/* 결제 버튼 */}
         {step === "payment" && (
-          <PaymentButtons onSelect={handlePaymentSelect} onBack={handleBackToShipping} />
+          <PaymentButtons onSelect={handlePaymentSelect} onBack={handleBackToShipping} disabled={isLoading} />
         )}
 
         {/* 주문 완료 */}

@@ -48,12 +48,14 @@ const statusColor: Record<string, string> = {
 export default function SellerOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/orders")
       .then((r) => r.json())
       .then(setOrders)
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   const handleExport = async () => {
@@ -96,7 +98,11 @@ export default function SellerOrdersPage() {
       </div>
 
       <div className="space-y-4">
-        {orders.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400 animate-pulse">
+            주문 목록을 불러오는 중...
+          </div>
+        ) : orders.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400">
             주문이 없습니다
           </div>
