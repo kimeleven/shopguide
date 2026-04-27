@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, use, useCallback } from "react";
+import { useSession, signIn } from "next-auth/react";
 
 interface Product {
   id: string;
@@ -330,8 +331,11 @@ function DoneCard({
   );
 }
 
+const PENDING_ORDER_KEY = (shopId: string) => `shopguide_pending_${shopId}`;
+
 export default function ShopPage({ params }: { params: Promise<{ shopId: string }> }) {
   const { shopId } = use(params);
+  const { data: session } = useSession();
   const [products, setProducts] = useState<Product[]>([]);
   const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -386,6 +390,28 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
 
     return () => { cancelled = true; };
   }, [shopId]);
+
+  // 카카오 로그인 후 복귀 시 저장된 주문 정보 복원
+  useEffect(() => {
+    if (!session || isInitialLoading) return;
+    const saved = localStorage.getItem(PENDING_ORDER_KEY(shopId));
+    if (!saved) return;
+    try {
+      const data = JSON.parse(saved);
+      setSelectedProduct(data.selectedProduct);
+      setSelectedOptions(data.selectedOptions);
+      setShippingInfo(data.shippingInfo);
+      setStep("payment");
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "로그인되었습니다. 결제 방법을 선택해주세요." },
+      ]);
+    } catch {
+      // ignore corrupted data
+    } finally {
+      localStorage.removeItem(PENDING_ORDER_KEY(shopId));
+    }
+  }, [session, isInitialLoading, shopId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -651,7 +677,28 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
 
         {/* 결제 버튼 */}
         {step === "payment" && (
-          <PaymentButtons onSelect={handlePaymentSelect} onBack={handleBackToShipping} disabled={isLoading} />
+          !session ? (
+            <div className="border rounded-xl p-6 bg-white shadow text-center space-y-4">
+              <div className="text-2xl">🔐</div>
+              <div className="font-semibold text-gray-800">결제를 위해 로그인이 필요합니다</div>
+              <div className="text-sm text-gray-500">카카오 로그인 후 주문이 완료됩니다.</div>
+              <button
+                onClick={() => {
+                  localStorage.setItem(PENDING_ORDER_KEY(shopId), JSON.stringify({
+                    selectedProduct,
+                    selectedOptions,
+                    shippingInfo,
+                  }));
+                  signIn("kakao", { callbackUrl: window.location.href });
+                }}
+                className="w-full py-2.5 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-500 transition"
+              >
+                카카오로 로그인하기
+              </button>
+            </div>
+          ) : (
+            <PaymentButtons onSelect={handlePaymentSelect} onBack={handleBackToShipping} disabled={isLoading} />
+          )
         )}
 
         {/* 주문 완료 */}
