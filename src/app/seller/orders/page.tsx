@@ -45,11 +45,25 @@ const statusColor: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-700",
 };
 
+const ALL_STATUSES = ["ALL", "PENDING", "PAID", "CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED"] as const;
+type FilterStatus = typeof ALL_STATUSES[number];
+
+const filterLabel: Record<FilterStatus, string> = {
+  ALL: "전체",
+  PENDING: "대기",
+  PAID: "결제완료",
+  CONFIRMED: "확인",
+  SHIPPED: "배송중",
+  COMPLETED: "완료",
+  CANCELLED: "취소",
+};
+
 export default function SellerOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
 
   useEffect(() => {
     fetch("/api/orders")
@@ -102,9 +116,16 @@ export default function SellerOrdersPage() {
     }
   };
 
+  const filteredOrders = filterStatus === "ALL"
+    ? orders
+    : orders.filter((o) => o.status === filterStatus);
+
+  const countByStatus = (status: FilterStatus) =>
+    status === "ALL" ? orders.length : orders.filter((o) => o.status === status).length;
+
   return (
     <div>
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
+      <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
         <h1 className="text-2xl font-bold">주문 관리</h1>
         <button
           onClick={handleExport}
@@ -115,17 +136,45 @@ export default function SellerOrdersPage() {
         </button>
       </div>
 
+      {/* 상태 필터 탭 */}
+      <div className="flex gap-1.5 flex-wrap mb-5">
+        {ALL_STATUSES.map((status) => {
+          const count = countByStatus(status);
+          const isActive = filterStatus === status;
+          return (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition flex items-center gap-1.5 ${
+                isActive
+                  ? "bg-blue-600 border-blue-600 text-white"
+                  : "bg-white border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600"
+              }`}
+            >
+              {filterLabel[status]}
+              <span
+                className={`text-xs px-1.5 py-0.5 rounded-full ${
+                  isActive ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="space-y-4">
         {isLoading ? (
           <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400 animate-pulse">
             주문 목록을 불러오는 중...
           </div>
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-8 text-center text-gray-400">
-            주문이 없습니다
+            {orders.length === 0 ? "주문이 없습니다" : `'${filterLabel[filterStatus]}' 상태의 주문이 없습니다`}
           </div>
         ) : (
-          orders.map((order) => (
+          filteredOrders.map((order) => (
             <div key={order.id} className="bg-white rounded-xl shadow p-4 space-y-3">
               <div className="flex flex-wrap justify-between items-start gap-2">
                 <div className="flex flex-wrap items-center gap-2">
